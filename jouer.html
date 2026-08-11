@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mission — ORIENS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Karla:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+#chargement{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
+#chargement .msg{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px}
+#chargement .sous{color:var(--gris);font-size:14.5px;margin-top:8px}
+#chargement a{color:var(--neon)}
+.retour-hub{position:fixed;left:14px;bottom:14px;z-index:60;font-size:12.5px;padding:8px 13px;
+  border:1px solid var(--trait);border-radius:99px;color:var(--gris);background:rgba(11,20,37,.9);
+  text-decoration:none;backdrop-filter:blur(6px)}
+.retour-hub:hover{border-color:var(--neon);color:#fff}
+</style>
+</head>
+<body>
+
+<div id="chargement"><div>
+  <div class="msg" id="msg">Ouverture du dossier…</div>
+  <div class="sous" id="sous"></div>
+</div></div>
+
+<div id="appli" style="display:none">
+<div id="accueil">
+  <div class="brief-carte">
+    <div class="eyebrow"><span class="puce"></span><span>Mission <b id="a-ref"></b> · en cours</span></div>
+    <h1>Sauver <span class="enseigne" id="a-ens"></span></h1>
+    <p class="accroche" id="a-role"></p>
+    <div class="encart" id="a-situation"></div>
+    <div class="enjeux" id="a-enjeux"></div>
+    <div class="label" style="margin:22px 0 7px">Votre prénom (facultatif)</div>
+    <input class="prenom" id="a-prenom" placeholder="Comment Karim doit-il vous appeler ?" maxlength="18" autocomplete="off">
+    <div class="label" style="margin:18px 0 7px">Difficulté</div>
+    <div class="niveaux">
+      <button class="niv" data-niv="1" aria-pressed="true"><b>Accompagné</b><span>Le plan est donné, un indice vous oriente. Le calcul reste à vous.</span></button>
+      <button class="niv" data-niv="2" aria-pressed="false"><b>En autonomie</b><span>Comme à l'examen : ni plan, ni indice de départ.</span></button>
+    </div>
+    <button class="go" id="a-go">Accepter la mission</button>
+  </div>
+</div>
+
+<div id="jeu" hidden>
+  <div id="bandeau"><div class="bandeau-in">
+    <div class="conf">
+      <div class="conf-tete"><span class="label">Confiance de Karim</span><span class="v" id="conf-v">55</span></div>
+      <div class="jauge"><i id="jauge-i"></i></div>
+    </div>
+    <span class="chrono" id="chrono">00:00</span>
+    <div class="onglets">
+      <button class="onglet" id="o-plan">Plan</button>
+      <button class="onglet" id="o-outils">Outils</button>
+      <button class="onglet" id="o-carnet">Carnet<span class="pastille" id="p-carnet">0</span></button>
+    </div>
+  </div></div>
+
+  <div class="wrap">
+    <div class="section">
+      <div class="section-tete"><h2>Ce qui est verrouillé</h2><span class="compte" id="cpt-s"></span></div>
+      <p class="aide">Chaque code est un calcul. Vous pouvez consulter les documents à tout moment, y compris pendant un calcul — ça ne coûte rien.</p>
+      <div class="serrures" id="serrures"></div>
+    </div>
+    <div class="section">
+      <div class="section-tete"><h2>Les documents</h2><span class="compte" id="cpt-p"></span></div>
+      <div class="pieces" id="pieces"></div>
+    </div>
+    <div class="section" id="zone-fin" hidden>
+      <div class="section-tete"><h2>Votre recommandation</h2></div>
+      <p class="aide">Tout est ouvert. Karim attend votre réponse.</p>
+      <button class="go" id="btn-rapport" style="max-width:360px">Répondre à Karim</button>
+    </div>
+  </div>
+</div>
+
+<div id="modale" role="dialog" aria-modal="true"><div class="boite" id="boite"></div></div>
+<div id="neon"><div class="sig" id="neon-txt">Ouvert</div></div>
+<div id="gain"></div>
+</div>
+
+<a class="retour-hub" href="index.html">◀ Toutes les missions</a>
+
+<script>
+/* Charge la mission demandée dans l'adresse (?m=go-01), puis le moteur.
+   Les fichiers sont chargés par balise <script> et non par fetch : ça
+   fonctionne aussi en ouvrant le fichier depuis une clé USB, hors ligne. */
+(function(){
+  var id = (new URLSearchParams(location.search)).get("m") || "go-01";
+  if(!/^[a-z0-9\-]+$/i.test(id)){ echec("Nom de mission invalide."); return; }
+
+  charger("outils.js", function(){
+    charger("missions/" + id + ".js", function(){
+      charger("moteur.js", function(){
+        document.getElementById("chargement").style.display = "none";
+        document.getElementById("appli").style.display = "";
+        if(window.MISSION) document.title = "Mission " + MISSION.ref + " — " + MISSION.enseigne;
+      }, function(){ echec("Le moteur n'a pas pu être chargé."); });
+    }, function(){
+      echec("La mission « " + id + " » n'existe pas encore.",
+            '<a href="index.html">Revenir au catalogue</a>');
+    });
+  }, function(){ echec("La boîte à outils n'a pas pu être chargée."); });
+
+  function charger(src, ok, ko){
+    var s = document.createElement("script");
+    s.src = src; s.onload = ok; s.onerror = ko || ok;
+    document.head.appendChild(s);
+  }
+  function echec(m, sous){
+    document.getElementById("msg").textContent = m;
+    document.getElementById("sous").innerHTML = sous || "Vérifiez le lien, ou prévenez votre enseignante.";
+  }
+})();
+</script>
+</body>
+</html>

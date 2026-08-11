@@ -1,0 +1,8 @@
+Déposez ici vos illustrations (jpg, png, webp).
+
+Dans un fichier de mission, appelez-les ainsi :
+  <img src="images/fournil-vitrine.jpg" alt="La vitrine du Fournil">
+
+Conseils :
+- largeur 1200 px maximum, poids sous 300 Ko : les étudiants sont en 4G
+- toujours renseigner alt="..." : c'est ce qui s'affiche si l'image ne charge pas
