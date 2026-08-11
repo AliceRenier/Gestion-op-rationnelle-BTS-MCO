@@ -24,26 +24,26 @@ window.OUTILS = {
     exemple:"Matelas 30 €, besoin 50 € : je suis à −20 €. Les deux façons de la calculer donnent toujours le même résultat, c'est le moyen de se vérifier."},
 
   "marge":{nom:"Marge commerciale",
-    formules:["Ventes de marchandises HT − Coût d'achat des marchandises vendues"],
-    simple:"Ce qu'on gagne en euros sur ce qu'on revend : prix de vente moins prix d'achat.",
-    exemple:"Vase acheté 65 €, revendu 100 € : la marge est de 35 €."},
+    formules:["Prix de vente HT − Coût d'achat HT",
+              "Ventes de marchandises HT − Coût d'achat des marchandises vendues"],
+    simple:"Ce qu'on gagne en euros sur ce qu'on revend. Attention : les deux montants doivent être hors taxes.",
+    exemple:"Vendu 900 € TTC (soit 750 € HT), acheté 500 € HT : marge de 250 €."},
 
   "tx-marque":{nom:"Taux de marque",
-    formules:["Marge commerciale ÷ Chiffre d'affaires HT × 100",
-              "(PV HT − PA HT) ÷ PV HT × 100"],
+    formules:["Marge commerciale ÷ Prix de vente HT × 100",
+              "Marge commerciale ÷ Chiffre d'affaires HT × 100"],
     simple:"Sur 100 € encaissés en caisse, combien il en reste après avoir payé le fournisseur. On divise par le prix de VENTE.",
     exemple:"Vase vendu 100 €, acheté 65 € : il reste 35 € sur 100 € encaissés → taux de marque 35 %."},
 
   "tx-marge":{nom:"Taux de marge",
-    formules:["Marge commerciale ÷ Coût d'achat des marchandises vendues × 100",
-              "(PV HT − PA HT) ÷ PA HT × 100"],
+    formules:["Marge commerciale ÷ Coût d'achat HT × 100"],
     simple:"Combien on gagne pour 100 € dépensés chez le fournisseur. On divise par le prix d'ACHAT.",
     exemple:"Même vase : 35 € gagnés pour 65 € dépensés → taux de marge 54 %. Attention, ce n'est pas la même chose que le taux de marque."},
 
   "coef":{nom:"Coefficient multiplicateur",
     formules:["Prix de vente TTC ÷ Coût d'achat HT"],
-    simple:"Par combien on multiplie le prix d'achat pour obtenir l'étiquette en rayon.",
-    exemple:"Acheté 65 € HT, vendu 120 € TTC : coefficient de 1,85."},
+    simple:"Le nombre par lequel on multiplie le prix d'achat pour obtenir directement l'étiquette en magasin. Attention : achat en HT, vente en TTC.",
+    exemple:"Acheté 800 € HT, vendu 2 000 € TTC : 2 000 ÷ 800 = coefficient de 2,50."},
 
   "mcv":{nom:"Marge sur coûts variables",
     formules:["Chiffre d'affaires − Charges variables",
@@ -100,8 +100,38 @@ window.OUTILS = {
     simple:"Mesure la réaction des clients à un changement de prix.",
     exemple:"Prix +10 %, ventes −20 % : élasticité de −2, la clientèle est très sensible au prix."},
 
-  "tx-var":{nom:"Taux de variation",
-    formules:["(Valeur d'arrivée − Valeur de départ) ÷ Valeur de départ × 100"],
-    simple:"De combien de pour cent quelque chose a augmenté ou baissé.",
-    exemple:"CA passé de 455 000 à 480 000 € : +5,5 %."}
+  "tx-var":{nom:"Pourcentage d'évolution",
+    formules:["(Arrivée − Départ) ÷ Départ × 100"],
+    simple:"De combien de pour cent une valeur a augmenté ou baissé entre deux dates.",
+    exemple:"CA de 180 000 € l'an dernier, 207 000 € cette année : (207 000 − 180 000) ÷ 180 000 × 100 = +15 %."},
+
+  "part":{nom:"Pourcentage de part",
+    formules:["Partiel ÷ Total × 100","Sur Excel : =Partiel / $Total$ puis format %"],
+    simple:"Quel poids un élément représente dans un total. Sert à savoir qui pèse le plus.",
+    exemple:"Une gamme fait 144 900 € sur 207 000 € de ventes : 144 900 ÷ 207 000 × 100 = 70 % du chiffre d'affaires."},
+
+  "reduc":{nom:"Montant d'une réduction ou d'une hausse",
+    formules:["Montant × (% ÷ 100)"],
+    simple:"Combien vaut la remise en euros, ou combien la hausse ajoute. Le résultat est un montant, pas un prix final.",
+    exemple:"Meuble à 850 €, hausse de 12 % : 850 × 0,12 = 102 € de hausse."},
+
+  "apres-remise":{nom:"Montant après remise",
+    formules:["Départ × (1 − % ÷ 100)"],
+    simple:"Le prix à payer une fois la remise enlevée. En une seule opération, sans soustraction séparée.",
+    exemple:"569 € avec 8 % de remise : 569 × 0,92 = 523,48 €."},
+
+  "apres-aug":{nom:"Montant après augmentation",
+    formules:["Départ × (1 + % ÷ 100)"],
+    simple:"Le prix une fois la hausse ajoutée. C'est aussi comme ça qu'on passe du HT au TTC.",
+    exemple:"523,48 € HT avec 5,5 % de TVA : 523,48 × 1,055 = 552,27 € TTC."},
+
+  "avant-remise":{nom:"Montant avant remise",
+    formules:["Après ÷ (1 − % ÷ 100)"],
+    simple:"Le prix catalogue, retrouvé à partir de ce qui a réellement été payé. On divise, on ne multiplie pas.",
+    exemple:"Payé 1 850 € avec 7,5 % de remise : 1 850 ÷ 0,925 = 2 000 € au catalogue."},
+
+  "avant-aug":{nom:"Montant avant augmentation",
+    formules:["Après ÷ (1 + % ÷ 100)"],
+    simple:"Le prix de base, retrouvé en retirant une hausse incluse. C'est comme ça qu'on passe du TTC au HT.",
+    exemple:"600 € TTC avec 20 % de TVA : 600 ÷ 1,20 = 500 € HT."}
 };
