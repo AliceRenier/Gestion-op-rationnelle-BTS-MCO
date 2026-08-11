@@ -5,6 +5,16 @@
    ════════════════════════════════════════════════════════════ */
 "use strict";
 const el = id => document.getElementById(id);
+
+/* Le dirigeant de la mission. Déclaré par MISSION.client ; à défaut,
+   déduit du premier personnage. Aucun prénom n'est écrit en dur. */
+const CLIENT = (() => {
+  if(typeof MISSION === "undefined") return {prenom:"le dirigeant", nom:"le dirigeant"};
+  if(MISSION.client) return MISSION.client;
+  const p = (MISSION.personnages || [])[0];
+  if(p) return {prenom:(p.nom || "").split(" ")[0], nom:p.nom};
+  return {prenom:"le dirigeant", nom:"le dirigeant"};
+})();
 const O = id => OUTILS[id];
 const P = id => MISSION.pieces.find(p => p.id === id);
 
@@ -18,6 +28,8 @@ const S = {
 
 /* ---------- accueil ---------- */
 el("a-ref").textContent = MISSION.ref;
+el("a-prenom").placeholder = "Comment " + CLIENT.prenom +
+  (CLIENT.genre === "f" ? " doit-elle" : " doit-il") + " vous appeler ?";
 el("a-ens").textContent = MISSION.enseigne;
 el("a-role").innerHTML = MISSION.role;
 el("a-situation").innerHTML = MISSION.situation;
@@ -34,6 +46,11 @@ el("a-go").addEventListener("click", () => {
   S.t0 = Date.now(); S.timer = setInterval(tic, 1000);
   MISSION.pieces.forEach(p => { if(!p.debloc) S.dispo.add(p.id); });
   majConf(0); rendre();
+  signaler("debut", {mission: MISSION.ref, niveau: S.niveau});
+  /* Les libellés qui nomment le dirigeant sont posés ici, pas dans le HTML. */
+  el("lbl-conf").textContent = "Confiance de " + CLIENT.prenom;
+  el("lbl-attente").textContent = "Tout est ouvert. " + CLIENT.prenom + " attend votre réponse.";
+  el("btn-rapport").textContent = "Répondre à " + CLIENT.prenom;
   if(S.niveau >= 2) ouvrirPlan(true);
 });
 function tic(){
@@ -58,6 +75,29 @@ function majConf(delta, motif){
   }
 }
 
+/* ════════════════════════════════════════════════════════════
+   DIALOGUE AVEC LA PAGE HÔTE
+   Quand le jeu tourne dans une iframe (LearnDash, Moodle...),
+   il annonce sa hauteur pour éviter les barres de défilement,
+   et signale la fin de mission avec le score.
+   Sans iframe, ces appels ne font rien.
+   ════════════════════════════════════════════════════════════ */
+const DANS_IFRAME = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+
+function signaler(type, donnees){
+  if(!DANS_IFRAME) return;
+  try { parent.postMessage(Object.assign({source:"oriens", type:type}, donnees || {}), "*"); }
+  catch(e){ /* la page hôte ne nous écoute pas, ce n'est pas grave */ }
+}
+function signalerHauteur(){
+  signaler("hauteur", {hauteur: Math.ceil(document.documentElement.scrollHeight)});
+}
+if(DANS_IFRAME){
+  window.addEventListener("load", signalerHauteur);
+  if(window.ResizeObserver) new ResizeObserver(signalerHauteur).observe(document.documentElement);
+  setInterval(signalerHauteur, 1200);
+}
+
 /* ---------- modale ---------- */
 function modale(html, papier){
   el("boite").className = "boite" + (papier ? " papier" : "");
@@ -65,8 +105,9 @@ function modale(html, papier){
   el("modale").classList.add("on");
   el("boite").querySelector(".fermer").addEventListener("click", fermer);
   el("modale").scrollTop = 0;
+  signalerHauteur();
 }
-function fermer(){ el("modale").classList.remove("on"); }
+function fermer(){ el("modale").classList.remove("on"); signalerHauteur(); }
 el("modale").addEventListener("click", e => { if(e.target.id === "modale") fermer(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape") fermer(); });
 function neon(txt){
@@ -327,8 +368,8 @@ function reussir(k){
 }
 
 function reaction(k){
-  modale('<div class="kicker">Message reçu</div><h2>Karim répond</h2>' +
-    '<div class="bulle"><span class="qui">Karim · maintenant</span>' +
+  modale('<div class="kicker">Message reçu</div><h2>' + CLIENT.prenom + ' répond</h2>' +
+    '<div class="bulle"><span class="qui">' + CLIENT.prenom + ' · maintenant</span>' +
     (S.prenom ? S.prenom + ", " : "") + k.reaction + '</div>' +
     '<div class="saisie"><button id="ok" style="width:100%">Continuer</button></div>');
   el("ok").addEventListener("click", fermer);
@@ -378,7 +419,7 @@ el("o-carnet").addEventListener("click", () => {
     : '<p class="vide">Vide pour l\'instant. Chaque code trouvé y ajoute une fiche.</p>';
   h += '<div class="zone-h5p"><div class="label">Le vocabulaire</div>' +
     (S.lexFait ? '<p style="margin-top:8px;font-size:14.5px">Vocabulaire parcouru. <b style="color:var(--menthe)">+8 de confiance.</b></p>'
-      : '<p style="margin-top:8px;font-size:14.5px;color:var(--gris)">Huit mots expliqués simplement, avec un exemple à chaque fois. Facultatif, mais ça rassure Karim : +8 de confiance.</p>' +
+      : '<p style="margin-top:8px;font-size:14.5px;color:var(--gris)">Huit mots expliqués simplement, avec un exemple à chaque fois. Facultatif, mais ça rassure ' + CLIENT.prenom + ' : +8 de confiance.</p>' +
         '<button class="pouce-btn" id="lex" style="margin-top:10px">Réviser le vocabulaire</button>') + '</div>';
   modale(h);
   if(el("lex")) el("lex").addEventListener("click", lexique);
@@ -440,13 +481,23 @@ function poser(){
 
 function finir(){
   S.fini = true; clearInterval(S.timer);
+  signaler("fin", {
+    mission: MISSION.ref,
+    enseigne: MISSION.enseigne,
+    niveau: S.niveau,
+    score: S.conf,
+    duree: S.sec,
+    pouces: S.pouces,
+    rapport: S.rapJustes + "/" + MISSION.rapport.length,
+    reussie: S.rapJustes === MISSION.rapport.length
+  });
   const m = Math.floor(S.sec/60), s = S.sec%60;
   const sauve = S.rapJustes === MISSION.rapport.length;
   const titre = S.conf >= 90 ? "Mission réussie, sans une fausse note"
     : S.conf >= 70 ? "Mission réussie" : "Mission bouclée";
   modale('<div class="kicker">Mission ' + MISSION.ref + '</div>' +
     '<h2 style="font-size:26px">' + titre + '</h2>' +
-    '<div class="bulle" style="margin-top:14px"><span class="qui">Karim · ce soir</span>' +
+    '<div class="bulle" style="margin-top:14px"><span class="qui">' + CLIENT.prenom + ' · ce soir</span>' +
       (sauve ? (S.prenom ? S.prenom + ", " : "") + "j'ai appelé le fournisseur. On solde les anciennes collections dès samedi. Vous m'avez évité de fermer — et surtout, j'ai enfin compris pourquoi. Merci."
              : (S.prenom ? S.prenom + ", " : "") + "j'ai compris l'essentiel. Il faut que je regarde ce stock de plus près. On se rappelle.") +
     '</div>' +

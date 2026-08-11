@@ -35,7 +35,7 @@
     <div class="encart" id="a-situation"></div>
     <div class="enjeux" id="a-enjeux"></div>
     <div class="label" style="margin:22px 0 7px">Votre prénom (facultatif)</div>
-    <input class="prenom" id="a-prenom" placeholder="Comment le client doit-il vous appeler ?" maxlength="18" autocomplete="off">
+    <input class="prenom" id="a-prenom" placeholder="Votre prénom" maxlength="18" autocomplete="off">
     <div class="label" style="margin:18px 0 7px">Difficulté</div>
     <div class="niveaux">
       <button class="niv" data-niv="1" aria-pressed="true"><b>Accompagné</b><span>Le plan est donné, un indice vous oriente. Le calcul reste à vous.</span></button>
@@ -48,7 +48,7 @@
 <div id="jeu" hidden>
   <div id="bandeau"><div class="bandeau-in">
     <div class="conf">
-      <div class="conf-tete"><span class="label">Confiance de ORIENS </span><span class="v" id="conf-v">55</span></div>
+      <div class="conf-tete"><span class="label" id="lbl-conf">Confiance</span><span class="v" id="conf-v">55</span></div>
       <div class="jauge"><i id="jauge-i"></i></div>
     </div>
     <span class="chrono" id="chrono">00:00</span>
@@ -71,8 +71,8 @@
     </div>
     <div class="section" id="zone-fin" hidden>
       <div class="section-tete"><h2>Votre recommandation</h2></div>
-      <p class="aide">Tout est ouvert. ORIENS attend votre réponse.</p>
-      <button class="go" id="btn-rapport" style="max-width:360px">Répondre à ORIENS</button>
+      <p class="aide" id="lbl-attente">Tout est ouvert.</p>
+      <button class="go" id="btn-rapport" style="max-width:360px">Répondre</button>
     </div>
   </div>
 </div>
