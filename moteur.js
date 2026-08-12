@@ -28,7 +28,7 @@ const PENALITE_ERREUR = Math.max(1, Math.round(RECOMPENSE_SERRURE * 0.4));
 const S = {
   niveau:1, prenom:"", t0:0, timer:null, sec:0, conf:0,
   lues:new Set(), ouvertes:new Set(), dispo:new Set(),
-  planFait:false, lexFait:false, ordre:{},
+  planFait:false, planActes:{}, lexFait:false, ordre:{},
   epreuves:new Set(), vus:new Set(), questions:0, indices:[],
   gains:[], ratages:[], pouces:0, fiches:[], rapIdx:0, rapJustes:0, fini:false
 };
@@ -58,7 +58,9 @@ el("a-go").addEventListener("click", () => {
   el("lbl-conf").textContent = "Confiance de " + CLIENT.prenom;
   el("lbl-attente").textContent = "Tout est ouvert. " + CLIENT.prenom + " attend votre réponse.";
   el("btn-rapport").textContent = "Répondre à " + CLIENT.prenom;
-  if(S.niveau >= 2) ouvrirPlan(true);
+  /* Un acte avec son propre plan gère son propre verrou ; sinon,
+     c'est le plan de mission global (comportement historique). */
+  if(S.niveau >= 2 && !(MISSION.actes || []).some(a => a.plan)) ouvrirPlan(true);
 });
 function tic(){
   S.sec = Math.floor((Date.now() - S.t0)/1000);
@@ -126,7 +128,10 @@ function neon(txt){
 /* ---------- rendu ---------- */
 function carteServrure(k){
   const ouv = S.ouvertes.has(k.id);
-  const bloq = S.niveau >= 2 && !S.planFait;
+  /* Les missions à plan par acte gèrent déjà leur verrou avant même
+     d'afficher cette carte (voir rendre()) : pas de second verrou ici. */
+  const acteAvecPlan = (MISSION.actes || []).some(a => a.plan);
+  const bloq = !acteAvecPlan && S.niveau >= 2 && !S.planFait;
   const d = document.createElement("div");
   d.className = "serrure" + (ouv ? " ouverte" : "");
   const val = (k.reponse === undefined) ? "Résolu" : fmt(k.reponse) + " " + (k.unite || "");
@@ -153,7 +158,15 @@ function rendre(){
         '<p class="acte-intro">' + (ouvert ? (a.intro || "") : "Terminez l'acte précédent pour découvrir la suite.") + '</p>';
     }
     const g = document.createElement("div"); g.className = "serrures";
-    if(ouvert) a.serrures.forEach(sid => {
+    const planActeBloque = ouvert && a.plan && S.niveau >= 2 && !S.planActes[i];
+    if(planActeBloque){
+      const d = document.createElement("div");
+      d.className = "serrure";
+      d.innerHTML = '<span class="obj">📋</span><h3>Plan de l\'acte</h3>' +
+        '<div class="dem">Avant de vous lancer, identifiez dans quel ordre vous allez procéder sur cet acte.</div>' +
+        '<button class="act" data-plan-acte="' + i + '">Établir le plan</button>';
+      g.appendChild(d);
+    } else if(ouvert) a.serrures.forEach(sid => {
       const k = MISSION.serrures.find(s => s.id === sid);
       if(k) g.appendChild(carteServrure(k));
     });
@@ -162,6 +175,7 @@ function rendre(){
     accessible = accessible && a.serrures.every(sid => S.ouvertes.has(sid));
   });
   z.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => serrure(b.dataset.k)));
+  z.querySelectorAll("[data-plan-acte]").forEach(b => b.addEventListener("click", () => ouvrirPlan(false, +b.dataset.planActe)));
   el("cpt-s").textContent = S.ouvertes.size + "/" + MISSION.serrures.length;
 
   const p = el("pieces"); p.innerHTML = "";
@@ -225,18 +239,28 @@ function dossier(retour){
     b.addEventListener("click", () => lire(b.dataset.p, retour)));
 }
 
-/* ---------- plan de mission ---------- */
-function ouvrirPlan(force){
-  if(S.niveau === 1 || (S.planFait && !force)){
-    S.planFait = true;
-    modale('<div class="kicker">Méthode</div><h2>Votre plan de mission</h2>' +
-      '<div class="liste-v">' + MISSION.plan.map((p,i) =>
+/* ---------- plan de mission (global) ou plan d'acte ----------
+   Appelée sans acteIndex : comportement historique, un seul plan
+   pour toute la mission (MISSION.plan / S.planFait).
+   Appelée avec acteIndex : plan propre à cet acte
+   (MISSION.actes[i].plan / S.planActes[i]), pour les missions qui
+   veulent faire identifier les étapes avant chaque dossier. */
+function ouvrirPlan(force, acteIndex){
+  const surActe = acteIndex !== undefined;
+  const plan = surActe ? MISSION.actes[acteIndex].plan : MISSION.plan;
+  const dejaFait = surActe ? S.planActes[acteIndex] : S.planFait;
+  const marquerFait = () => { if(surActe) S.planActes[acteIndex] = true; else S.planFait = true; };
+
+  if(S.niveau === 1 || (dejaFait && !force)){
+    marquerFait();
+    modale('<div class="kicker">Méthode</div><h2>' + (surActe ? "Le plan de cet acte" : "Votre plan de mission") + '</h2>' +
+      '<div class="liste-v">' + plan.map((p,i) =>
         '<div class="etape pose"><span class="rang">' + (i+1) + '</span><span>' + p + '</span></div>').join("") + '</div>');
     rendre(); return;
   }
-  let mis = [], reste = MISSION.plan.map((t,i) => ({t,i})).sort(() => Math.random()-.5);
+  let mis = [], reste = plan.map((t,i) => ({t,i})).sort(() => Math.random()-.5);
   function dessine(msg){
-    modale('<div class="kicker">Avant de commencer</div><h2>Dans quel ordre allez-vous procéder ?</h2>' +
+    modale('<div class="kicker">' + (surActe ? "Avant cet acte" : "Avant de commencer") + '</div><h2>Dans quel ordre allez-vous procéder ?</h2>' +
       '<p style="font-size:14.5px;color:var(--gris);margin-top:8px">Touchez les étapes dans l\'ordre. Se tromper ne coûte que 2 points — vous pouvez essayer.</p>' +
       (msg || "") +
       '<div class="label" style="margin-top:16px">Votre plan</div>' +
@@ -253,14 +277,13 @@ function ouvrirPlan(force){
     if(el("reset")) el("reset").addEventListener("click", () => { reste = reste.concat(mis); mis = []; dessine(); });
     if(el("valider")) el("valider").addEventListener("click", () => {
       if(mis.every((e,n) => e.i === n)){
-        S.planFait = true; fermer(); neon("Plan validé"); majConf(+5,""); rendre();
+        marquerFait(); fermer(); neon("Plan validé"); majConf(+5,""); rendre();
       } else {
-        majConf(-2, "Plan de mission : ordre à revoir au premier essai.");
+        majConf(-2, (surActe ? "Plan de l'acte" : "Plan de mission") + " : ordre à revoir au premier essai.");
         const prem = mis.findIndex((e,n) => e.i !== n);
         reste = reste.concat(mis); mis = [];
         dessine('<div class="explique"><div class="t">Pas tout à fait dans cet ordre</div>' +
-          '<p>L\'étape « ' + MISSION.plan[Math.min(prem,MISSION.plan.length-1)] + ' » n\'arrive pas là.</p>' +
-          '<div class="ex">Retenez la logique : <b>on mesure d\'abord les deux grandeurs, on les compare ensuite, et on ne cherche la cause qu\'après.</b> On ne peut pas conclure sur le compte en banque avant d\'avoir le matelas ET le besoin.</div></div>');
+          '<p>L\'étape « ' + plan[Math.min(prem,plan.length-1)] + ' » n\'arrive pas là.</p></div>');
       }
     });
   }
