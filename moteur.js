@@ -18,8 +18,15 @@ const CLIENT = (() => {
 const O = id => OUTILS[id];
 const P = id => MISSION.pieces.find(p => p.id === id);
 
+/* La confiance reflète la performance réelle : rien n'est offert au
+   départ, chaque code trouvé rapporte sa part du total, chaque erreur
+   coûte vraiment. Calculé par mission pour que 100 corresponde
+   toujours à un sans-faute, quel que soit le nombre de serrures. */
+const RECOMPENSE_SERRURE = Math.max(1, Math.round(100 / MISSION.serrures.length));
+const PENALITE_ERREUR = Math.max(1, Math.round(RECOMPENSE_SERRURE * 0.4));
+
 const S = {
-  niveau:1, prenom:"", t0:0, timer:null, sec:0, conf:55,
+  niveau:1, prenom:"", t0:0, timer:null, sec:0, conf:0,
   lues:new Set(), ouvertes:new Set(), dispo:new Set(),
   planFait:false, lexFait:false, ordre:{},
   epreuves:new Set(), vus:new Set(), questions:0, indices:[],
@@ -59,10 +66,10 @@ function tic(){
 }
 function appel(){ return S.prenom || "chef"; }
 
-/* ---------- confiance : elle monte beaucoup, elle descend peu ---------- */
+/* ---------- confiance : reflète la performance, pas de filet ---------- */
 function majConf(delta, motif){
   const av = S.conf;
-  S.conf = Math.max(5, Math.min(100, S.conf + delta));
+  S.conf = Math.max(0, Math.min(100, S.conf + delta));
   el("conf-v").textContent = S.conf;
   el("jauge-i").style.width = S.conf + "%";
   if(delta > 0) S.gains.push(motif || "");
@@ -304,7 +311,7 @@ function serrure(id){
       const o = b.dataset.o;
       if(o === k.outil){ etape2(); return; }
       rates.push(o);
-      majConf(-2, k.nom + " : « " + O(o).nom + " » choisi à la place de « " + O(k.outil).nom + " ».");
+      majConf(-PENALITE_ERREUR, k.nom + " : « " + O(o).nom + " » choisi à la place de « " + O(k.outil).nom + " ».");
       const f = (k.faux && k.faux[o]) || {t:"Ce n'est pas le bon outil ici", p:O(o).simple, ex:O(o).exemple};
       etape1('<div class="explique"><div class="t">' + f.t + '</div><p>' + f.p + '</p>' +
              '<div class="ex">Exemple : ' + f.ex + '</div></div>');
@@ -334,7 +341,7 @@ function serrure(id){
       if(isNaN(n)){ inp.classList.add("secousse"); setTimeout(()=>inp.classList.remove("secousse"),330); return; }
       if(Math.abs(n - k.reponse) <= k.tol){ reussir(k); return; }
       saisi = inp.value;
-      majConf(-2, k.nom + " : code « " + inp.value + " » refusé.");
+      majConf(-PENALITE_ERREUR, k.nom + " : code « " + inp.value + " » refusé.");
       const pg = (k.pieges||[]).find(p => Math.abs(n - p.val) <= Math.max(0.5, Math.abs(p.val)*0.02));
       const bloc = pg
         ? '<div class="explique"><div class="t">' + pg.t + '</div><p>' + pg.p + '</p><div class="ex">Exemple : ' + pg.ex + '</div></div>'
@@ -362,7 +369,7 @@ function reussir(k){
   S.ouvertes.add(k.id);
   (k.debloque || []).forEach(c => S.dispo.add(c));
   if(k.fiche) S.fiches.push(k.fiche);
-  fermer(); neon(k.neon || "Ouvert"); majConf(+14, "");
+  fermer(); neon(k.neon || "Ouvert"); majConf(+RECOMPENSE_SERRURE, "");
   rendre();
   if(k.reaction) setTimeout(() => reaction(k), 1100);
 }
@@ -418,8 +425,8 @@ el("o-carnet").addEventListener("click", () => {
         '<div class="ex">' + f.ex + '</div></div>').join("")
     : '<p class="vide">Vide pour l\'instant. Chaque code trouvé y ajoute une fiche.</p>';
   h += '<div class="zone-h5p"><div class="label">Le vocabulaire</div>' +
-    (S.lexFait ? '<p style="margin-top:8px;font-size:14.5px">Vocabulaire parcouru. <b style="color:var(--menthe)">+8 de confiance.</b></p>'
-      : '<p style="margin-top:8px;font-size:14.5px;color:var(--gris)">Huit mots expliqués simplement, avec un exemple à chaque fois. Facultatif, mais ça rassure ' + CLIENT.prenom + ' : +8 de confiance.</p>' +
+    (S.lexFait ? '<p style="margin-top:8px;font-size:14.5px">Vocabulaire parcouru. <b style="color:var(--menthe)">Acquis.</b></p>'
+      : '<p style="margin-top:8px;font-size:14.5px;color:var(--gris)">Huit mots expliqués simplement, avec un exemple à chaque fois. Facultatif, sans effet sur la note — juste pour s\'aider.</p>' +
         '<button class="pouce-btn" id="lex" style="margin-top:10px">Réviser le vocabulaire</button>') + '</div>';
   modale(h);
   if(el("lex")) el("lex").addEventListener("click", lexique);
@@ -440,7 +447,7 @@ function lexique(){
       if(!face){ face = 1; dessine(); return; }
       face = 0; i++;
       if(i >= MISSION.lexique.length){
-        if(!S.lexFait){ S.lexFait = true; majConf(+8,""); }
+        if(!S.lexFait){ S.lexFait = true; }
         fermer(); neon("Acquis"); rendre();
       } else dessine();
     };
@@ -467,8 +474,8 @@ function poser(){
       x.disabled = true;
       x.classList.add(q.choix[+x.dataset.c].bon ? "bon" : "mauvais");
     });
-    if(c.bon){ S.rapJustes++; majConf(+8,""); }
-    else majConf(-3, "Recommandation " + (S.rapIdx+1) + " : réponse à revoir.");
+    if(c.bon){ S.rapJustes++; majConf(+6,""); }
+    else majConf(-6, "Recommandation " + (S.rapIdx+1) + " : réponse à revoir.");
     el("ap").innerHTML = '<div class="explique"><div class="t">' + (c.bon ? "Exactement" : "Pas tout à fait") + '</div><p>' + c.r + '</p></div>' +
       '<div class="saisie"><button id="sv" style="width:100%">' +
       (S.rapIdx+1 < MISSION.rapport.length ? "Question suivante" : "Rendre le rapport") + '</button></div>';
@@ -587,7 +594,7 @@ function epClassement(k, fini){
       if(b.dataset.c === it.cat){
         place[it.cat].push(it.val); i++; expl = ""; dessine();
       } else {
-        majConf(-1, k.nom + " : « " + it.t + " » mal classé.");
+        majConf(-2, k.nom + " : « " + it.t + " » mal classé.");
         expl = blocErreur(it.expl);
         dessine();
       }
@@ -634,7 +641,7 @@ function epAppariement(k, fini){
       const d = +b.dataset.d;
       if(d === choisi){ trouves[d] = true; choisi = null; expl = ""; }
       else {
-        majConf(-1, k.nom + " : « " + e.paires[choisi].terme + " » mal défini.");
+        majConf(-2, k.nom + " : « " + e.paires[choisi].terme + " » mal défini.");
         expl = blocErreur(e.paires[choisi].expl);
         choisi = null;
       }
@@ -669,7 +676,7 @@ function epDocument(k, fini){
       for(const c of e.champs){
         const n = lireNombre(vals[c.id] || "");
         if(isNaN(n) || Math.abs(n - c.reponse) > c.tol){
-          majConf(-1, k.nom + " : « " + c.label + " » incorrect.");
+          majConf(-2, k.nom + " : « " + c.label + " » incorrect.");
           expl = blocErreur(isNaN(n) ? {t:"Il manque une valeur", p:"Remplissez toutes les cases avant de vérifier."} : c.expl);
           dessine(); return;
         }
@@ -703,7 +710,7 @@ function epTemoin(k, fini){
           '<div class="saisie"><button id="ok" style="width:100%">Continuer</button></div>';
         el("ok").addEventListener("click", fini);
       } else {
-        majConf(-2, k.nom + " : mauvaise pièce désignée.");
+        majConf(-3, k.nom + " : mauvaise pièce désignée.");
         el("ap").innerHTML = blocErreur({t:"Ce n'est pas cette pièce", p:c.r});
         b.disabled = true; b.classList.add("mauvais");
       }

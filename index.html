@@ -99,68 +99,106 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ambre);outline-offs
     <p>Chaque dossier est une entreprise en difficulté. À vous de trouver ce qui cloche. Rien à installer, aucun compte à créer : ouvrez et jouez.</p>
   </div>
   <div id="catalogue"></div>
-  <div class="note">
-    <b>Pour l'enseignante — ajouter une mission :</b> déposer le fichier dans <code>missions/</code>,
-    puis ajouter une ligne dans <code>CATALOGUE</code>, en haut de cette page. Le lien à donner aux
-    étudiants est <code>jouer.html?m=<i>identifiant</i></code>.
-  </div>
 </div>
 
 <script>
 /* ════════════════════════════════════════════════════════════
-   LE CATALOGUE — la seule chose à modifier pour ajouter une mission.
-   id   : nom du fichier dans missions/ (sans le .js)
-   pret : false = carte grisée, non cliquable
+   LE CATALOGUE — la seule chose à modifier pour ajouter une mission :
+   ajoutez son identifiant (nom du fichier dans missions/, sans le .js)
+   dans la liste "prets" du bon groupe. Titre, sujet, niveau et durée
+   sont lus automatiquement depuis window.MISSION du fichier lui-même
+   (champs enseigne / accroche / niveau / duree / chapitres) —
+   rien à recopier ici. "aVenir" reste pour les cases pas encore écrites.
    ════════════════════════════════════════════════════════════ */
-const CATALOGUE = [
-  { groupe:"Missions par chapitre",
-    intro:"Un dossier par notion, à faire au fil de l'année. La difficulté monte d'une mission à l'autre.",
-    items:[
-      {id:"go-00", ref:"GO-00", titre:"Këpler Store", niveau:"Découverte",
-       sujet:"Il vend 15 % de plus et gagne pareil. Et son fournisseur lui doit de l'argent.",
-       meta:["Chapitre 0","Calculs de base","~45 min"], pret:true},
-      {id:"go-01", ref:"GO-01", titre:"Ambiance & Co", niveau:"Facile",
-       sujet:"Un magasin bénéficiaire qui n'arrive plus à payer ses fournisseurs.",
-       meta:["Analyse financière","Marges","~40 min"], pret:true},
-      {id:"go-02", ref:"GO-02", titre:"Le Fournil de Sophie", niveau:"Moyen",
-       sujet:"Les ventes montent, l'argent disparaît. Et quelqu'un ne dit pas tout.",
-       meta:["Analyse financière","Marges","~55 min"], pret:true},
-      {id:"go-03", ref:"GO-03", titre:"À venir", niveau:"",
-       sujet:"Coûts, charges fixes et seuil de rentabilité.",
-       meta:["Gestion des coûts"], pret:false},
-      {id:"go-04", ref:"GO-04", titre:"À venir", niveau:"",
-       sujet:"Gestion des stocks et approvisionnements.",
-       meta:["Approvisionnement"], pret:false}
+const GROUPES = [
+  { groupe:"Chapitre 0 — Calculs de base",
+    intro:"Le socle : pourcentages, remises, HT/TTC, marges. À faire avant tout le reste.",
+    prets:["go-00", "c0-moyen"],
+    aVenir:[
+      {ref:"C0-D", titre:"À venir", niveau:"Difficile", sujet:"Une seule question de départ, comme à l'examen — sur ce chapitre uniquement.", meta:[]}
+    ]},
+  { groupe:"Analyse financière & Marges",
+    intro:"Bilan fonctionnel, trésorerie, taux de marge. La difficulté monte d'une mission à l'autre.",
+    prets:["go-01", "go-02"],
+    aVenir:[
+      {ref:"AF-D", titre:"À venir", niveau:"Difficile", sujet:"Une seule question de départ, comme à l'examen — sur ce chapitre uniquement.", meta:[]}
+    ]},
+  { groupe:"Prochains chapitres",
+    intro:"Pas encore écrits — la trame de l'année à venir.",
+    prets:[],
+    aVenir:[
+      {ref:"GO-03", titre:"À venir", sujet:"Coûts, charges fixes et seuil de rentabilité.", meta:["Gestion des coûts"]},
+      {ref:"GO-04", titre:"À venir", sujet:"Gestion des stocks et approvisionnements.", meta:["Approvisionnement"]}
     ]},
   { groupe:"Entraînement à l'examen",
     intro:"Les chapitres sont mélangés, il n'y a ni plan ni indice de départ. Une seule question au départ, comme à l'épreuve E5.",
-    items:[
-      {id:"e5-01", ref:"E5-01", titre:"À venir", niveau:"Difficile",
-       sujet:"Dossier complet, plusieurs chapitres croisés, recommandation à rédiger.",
-       meta:["Mixte","Sans guidage"], pret:false}
+    prets:[],
+    aVenir:[
+      {ref:"E5-01", titre:"À venir", niveau:"Difficile", sujet:"Dossier complet, plusieurs chapitres croisés, recommandation à rédiger.", meta:["Mixte","Sans guidage"]}
     ]}
 ];
 
 const base = location.href.replace(/index\.html.*$/, "").replace(/\?.*$/, "");
-document.getElementById("catalogue").innerHTML = CATALOGUE.map(g => `
-  <div class="groupe">
-    <div class="groupe-tete"><h2>${g.groupe}</h2>
-      <span class="n">${g.items.filter(i => i.pret).length} / ${g.items.length} disponibles</span></div>
-    <p class="intro">${g.intro}</p>
-    <div class="grille">${g.items.map(m => `
-      <div class="m-carte${m.pret ? "" : " bientot"}">
-        <div class="m-haut"><span class="m-ref">${m.ref}</span>
-          <span class="m-etat ${m.pret ? "ok" : "wip"}">${m.pret ? "disponible" : "en préparation"}</span></div>
-        <h3>${m.titre}</h3>
-        <p class="sujet">${m.sujet}</p>
-        <div class="m-meta">${m.niveau ? `<span class="niv">${m.niveau}</span>` : ""}${m.meta.map(t => `<span>${t}</span>`).join("")}</div>
-        ${m.pret ? `<div class="m-actions">
-          <a class="m-jouer" href="jouer.html?m=${m.id}">Ouvrir le dossier</a>
-          <button class="m-lien" data-id="${m.id}" title="Copier le lien à coller dans Classroom">Lien</button>
-        </div>` : ""}
-      </div>`).join("")}</div>
-  </div>`).join("");
 
+/* Charge une mission juste pour lire ses métadonnées (pas le moteur).
+   Un identifiant introuvable ne casse pas la page : la carte est
+   simplement ignorée, avec un avertissement en console. */
+function chargerMission(id){
+  return new Promise(resolve => {
+    const s = document.createElement("script");
+    s.src = "missions/" + id + ".js";
+    s.onload = () => { const m = window.MISSION; window.MISSION = undefined; resolve(m); };
+    s.onerror = () => { console.warn("Mission introuvable :", id); resolve(null); };
+    document.head.appendChild(s);
+  });
+}
+
+async function carteDepuisMission(id){
+  const m = await chargerMission(id);
+  if(!m) return null;
+  return {
+    id, ref:m.ref, titre:m.enseigne, niveau:m.niveau || "",
+    sujet:m.accroche || m.sujet || "", meta:[...(m.chapitres || []), m.duree].filter(Boolean),
+    pret:true
+  };
+}
+
+async function construire(){
+  for(const g of GROUPES){
+    const cartes = [];
+    for(const id of g.prets){
+      const c = await carteDepuisMission(id);
+      if(c) cartes.push(c);
+    }
+    g.aVenir.forEach(a => cartes.push(Object.assign({pret:false, meta:a.meta || []}, a)));
+    g.cartes = cartes;
+  }
+  afficher();
+}
+
+function afficher(){
+  document.getElementById("catalogue").innerHTML = GROUPES.map(g => `
+    <div class="groupe">
+      <div class="groupe-tete"><h2>${g.groupe}</h2>
+        <span class="n">${g.cartes.filter(i => i.pret).length} / ${g.cartes.length} disponibles</span></div>
+      <p class="intro">${g.intro}</p>
+      <div class="grille">${g.cartes.map(m => `
+        <div class="m-carte${m.pret ? "" : " bientot"}">
+          <div class="m-haut"><span class="m-ref">${m.ref}</span>
+            <span class="m-etat ${m.pret ? "ok" : "wip"}">${m.pret ? "disponible" : "en préparation"}</span></div>
+          <h3>${m.titre}</h3>
+          <p class="sujet">${m.sujet}</p>
+          <div class="m-meta">${m.niveau ? `<span class="niv">${m.niveau}</span>` : ""}${m.meta.map(t => `<span>${t}</span>`).join("")}</div>
+          ${m.pret ? `<div class="m-actions">
+            <a class="m-jouer" href="jouer.html?m=${m.id}">Ouvrir le dossier</a>
+            <button class="m-lien" data-id="${m.id}" title="Copier le lien à coller dans Classroom">Lien</button>
+          </div>` : ""}
+        </div>`).join("")}</div>
+    </div>`).join("");
+  brancherLiens();
+}
+
+function brancherLiens(){
 document.querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", async () => {
   const url = base + "jouer.html?m=" + b.dataset.id;
   try { await navigator.clipboard.writeText(url); }
@@ -168,6 +206,9 @@ document.querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", 
   b.textContent = "Copié"; b.classList.add("fait");
   setTimeout(() => { b.textContent = "Lien"; b.classList.remove("fait"); }, 1800);
 }));
+}
+
+construire();
 </script>
 </body>
 </html>
