@@ -95,6 +95,11 @@ window.OUTILS = {
     simple:"Sert à décider si un investissement vaut le coup. Positive, le projet rapporte plus qu'il ne coûte.",
     exemple:"Un deuxième magasin coûte 80 000 € et rapportera 95 000 € actualisés : VAN de +15 000 €, le projet est rentable."},
 
+  "delai-recup":{nom:"Délai de récupération du capital investi",
+    formules:["(360 × dernier cumul actualisé négatif, en valeur absolue) ÷ FNT actualisé de l'année suivante"],
+    simple:"Le temps qu'il faut pour que les flux de trésorerie actualisés remboursent entièrement l'investissement de départ.",
+    exemple:"Cumul de −68,11 K€ fin année 3, +150,89 K€ de flux actualisé en année 4 : (360 × 68,11) ÷ 150,89 ≈ 163 jours après le début de l'année 4."},
+
   "elas":{nom:"Élasticité prix de la demande",
     formules:["Variation en % des quantités ÷ Variation en % du prix"],
     simple:"Mesure la réaction des clients à un changement de prix.",
