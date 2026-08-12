@@ -32,9 +32,19 @@ window.MISSION = {
 
   actes:[
     {titre:"Le pôle Studio & Production", serrures:["v1","v2","v3","v4"],
-     intro:"Avant de parler d'agrandissement, encore faut-il savoir ce que pèse vraiment ce pôle aujourd'hui, comparé aux six autres."},
+     intro:"Avant de parler d'agrandissement, encore faut-il savoir ce que pèse vraiment ce pôle aujourd'hui, comparé aux six autres.",
+     plan:[
+       "Mesurer l'évolution du chiffre d'affaires du pôle",
+       "Mesurer le poids du pôle dans l'ensemble de l'agence",
+       "Calculer ce que le pôle rapporte sur ses ventes",
+       "Calculer ce que le pôle rapporte sur ses coûts"
+     ]},
     {titre:"Le projet d'équipement", serrures:["v5","v6"],
-     intro:"Le diagnostic est posé. Reste à savoir si les 400 000 € demandés seront un jour remboursés — et en combien de temps."}
+     intro:"Le diagnostic est posé. Reste à savoir si les 400 000 € demandés seront un jour remboursés — et en combien de temps.",
+     plan:[
+       "Reconstituer les flux de trésorerie prévisionnels et en déduire la VAN",
+       "Déterminer le délai de récupération du capital investi"
+     ]}
   ],
 
   pieces:[

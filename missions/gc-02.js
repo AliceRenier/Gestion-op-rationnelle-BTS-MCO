@@ -34,9 +34,17 @@ window.MISSION = {
 
   actes:[
     {titre:"La soirée de lancement", serrures:["v1","v2"],
-     intro:"Avant de savoir si la soirée est une bonne idée, il faut d'abord savoir si elle est rentable telle qu'elle est prévue."},
+     intro:"Avant de savoir si la soirée est une bonne idée, il faut d'abord savoir si elle est rentable telle qu'elle est prévue.",
+     plan:[
+       "Construire le compte de résultat prévisionnel de la soirée",
+       "En déduire le seuil de rentabilité en nombre de participants"
+     ]},
     {titre:"L'approvisionnement des kits d'accueil", serrures:["v3"],
-     intro:"La soirée n'est que le début : les kits d'accueil doivent être disponibles toute la saison, sans rupture ni surstock."}
+     intro:"La soirée n'est que le début : les kits d'accueil doivent être disponibles toute la saison, sans rupture ni surstock.",
+     plan:[
+       "Identifier le besoin de la période pour la semaine 30",
+       "En déduire la quantité de kits, puis de cartons, à commander"
+     ]}
   ],
 
   pieces:[
@@ -111,7 +119,9 @@ window.MISSION = {
         ],
         conclusion:"La soirée coûte 71,42 € de plus qu'elle ne rapporte, telle qu'elle est prévue actuellement. Ce n'est pas une catastrophe, mais ce n'est pas gratuit non plus."
       },
-      demande:"", boussole:"", debloque:[],
+      demande:"Déterminez le résultat prévisionnel de la soirée de lancement, à partir des informations de l'Annexe 1.",
+      boussole:"Construisez la soirée comme un petit compte de résultat : ce qui rentre (chiffre d'affaires), moins tout ce qui sort (coût de production, personnel, envoi, kits). Chaque montant se calcule à partir d'un pourcentage ou d'un taux donné dans l'Annexe 1.",
+      candidats:[], debloque:[],
       reaction:"Un léger déficit, pas une catastrophe. Reste à savoir combien de participants en plus changeraient la donne.",
       pouces:[
         {cout:1, txt:"Toutes les données sont dans l'Annexe 1. Suivez l'ordre des lignes du tableau."},
@@ -136,7 +146,9 @@ window.MISSION = {
         ],
         conclusion:"À partir de 133 participants, la soirée devient rentable — soit seulement 3 de plus que prévu. Un petit effort sur les confirmations suffirait."
       },
-      demande:"", boussole:"", debloque:["repartition-ventes","exemple-semaines"],
+      demande:"Déterminez à partir de combien de participants la soirée devient rentable.",
+      boussole:"Le résultat trouvé à l'étape précédente est un manque à gagner. Chaque participant en plus rapporte le panier moyen : combien en faut-il pour combler ce manque ?",
+      candidats:[], debloque:["repartition-ventes","exemple-semaines"],
       reaction:"133, à peine plus que les 130 attendus. Un tout petit effort sur les confirmations changerait la donne.",
       pouces:[
         {cout:1, txt:"Le manque à gagner, c'est la valeur absolue du résultat trouvé à l'étape précédente."},
@@ -171,7 +183,9 @@ window.MISSION = {
         ],
         conclusion:"20 kits en stock fin de semaine 30 — de quoi couvrir le début de la semaine 31 sans rupture, sans excès non plus."
       },
-      demande:"", boussole:"", debloque:["bilan-final"],
+      demande:"Présentez le programme d'approvisionnement des kits d'accueil pour la semaine 30.",
+      boussole:"La méthode est déjà sous vos yeux, appliquée aux semaines 27 à 29 : à vous de la reproduire à l'identique sur la semaine 30.",
+      candidats:[], debloque:["bilan-final"],
       reaction:"L'approvisionnement de l'été est calé. Reste la décision finale.",
       pouces:[
         {cout:1, txt:"Même méthode que la semaine 28 (pièce « Semaines déjà planifiées ») : besoin = réservations de la semaine + réservations de la semaine suivante."},
